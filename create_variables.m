@@ -13,7 +13,12 @@
 %
 %   SEE ALSO: solve_flex
 
+%% Setup
+
 clc, clear, close all
+
+pth = pwd;
+addpath(pth+append(filesep+"functions"))
 
 %% Problem setup
 
@@ -52,7 +57,7 @@ vec_dP = [.1:.1:1 1.5:.5:4.5 5:5:10];
 params.dP_max = max(vec_dP);
 n.dP = numel(vec_dP);
 
-%% Subgraphs
+%% Subgraphs with manual changes
 
 [pts] = partition_edges(G,params.pipes(:,4),e,n,0);
 n.sg = 2;
