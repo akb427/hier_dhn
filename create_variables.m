@@ -1,3 +1,18 @@
+%CREATE_VARIABLES  Generates the hierarchical control problem.
+%
+%   DESCRIPTION: Takes the prescribed graph and partitions it into
+%   subgraphs. Additionally stores the timing and network parameters for
+%   these subgraphs. Uses these to generate the CasADi functions to be
+%   solved in the hierarchical structure for the subgraphs.
+%
+%   OUTPUTS:
+%       opti_variables.m - File storing control problem
+%
+%   DEPENDENCIES: generate_params, partition_edges, subgraph_params,
+%   opt_low_tfn
+%
+%   SEE ALSO: solve_flex
+
 clc, clear, close all
 
 %% Problem setup
@@ -71,10 +86,6 @@ params = rmfield(params,{'Cap_l','Cap_u','w_flex','Qb'});
 
 vec_par = [repelem(1:n.sg,n.dP);repmat(vec_dP,1,n.sg)];
 n.par = size(vec_par,2);
-% t_elapsed = zeros(n_step,n.par);
-% vLL = cell(n_step,n.par);
-% vsim = cell(n_step,1);
-%dx_all = zeros(n_step,2);
 vLL_i = cell(1,n.par);
 t_elapsed_i = zeros(1,n.par);
 
@@ -91,4 +102,4 @@ Ms = repelem(Ms,n.dP);
 
 %% Store Variables
 
-save('opti_variables_notime')
+save('opti_variables')
