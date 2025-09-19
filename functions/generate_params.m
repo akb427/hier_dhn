@@ -1,10 +1,35 @@
-function [G,n,e,v,params,temp_prof,w] = generate_params(G,n,e,params)
-%GENERATE_PARAMS Generate parameters for network components
-%   G: Graph of network
-%   n: structure of sizes
-%   params: parameter of network components
-%   params.pipes: [L D zetaB zetaF mdot Lbypass Dbypass mdotbypass]
-%   params.users: [mu Q Ls1 Ls2 Ls3 Ds1 Ds2 Ds3]
+function [G,n,e,v,params,temp_prof] = generate_params(G,n,e,params)
+%GENERATE_PARAMS Generate parameters for network components.
+%
+%   [G,n,e,v,params,temp_prof] = GENERATE_PARAMS(G,n,e,params)
+%
+%   DESCRIPTION: Classifies the elements in G. Contains hard-coded values
+%   for the network parameters, pipe parameters, temperature profiles
+%   followed by each building type. Additionally loads building heat
+%   demands and ambient conditions for 1/28/2018-2/4/2018. Finally loads
+%   the buildings heat capacity. 
+%
+%   INPUTS:
+%       G       - Graph of network.
+%       n       - Structure of sizes.
+%       params  - Structure of network components parameter, including
+%       pipes in the form [L D zetaB zetaF mdot Lbypass Dbypass mdotbypass]
+%       and users in the form [mu Q Ls1 Ls2 Ls3 Ds1 Ds2 Ds3].
+%
+%   OUTPUTS:
+%       G           - Graph of updated network.
+%       n           - Structure of updated sizes.
+%       e           - Structure of edge information.
+%       v           - Structure of node information.
+%       params      - Structure of update network component parameters.
+%       temp_prof   - Structure of allowable temperature diviations.
+%
+%   DEPENDENCIES: heat profiles.mat, USA_IL_Chicago-Midway.AP_Tamb.xlsx,
+%       Cbuild.mat 
+
+%% Data loading
+
+pth_data = pwd+filesep+"data"+filesep; 
 
 %% Timing
 
@@ -16,32 +41,41 @@ date_end = datetime(2018,2,4);
 delta_date = seconds(date_end-date_start);
 
 %% Graph 
+
+% Graph elements
 params.Inc = -incidence(G);
 n.v = numnodes(G);
 n.e = numedges(G);
 G.Edges.Names = (1:n.e)';
 G.Nodes.Names = (1:n.v)';
 
+% Edge set
 edges = [G.Edges.Names G.Edges.EndNodes];
 
+% Bypass edges
 [~,ia,~] = unique(edges(:,2:3),'rows');
 e.by = setdiff(1:n.e,ia);
 e.by_idx = e.by;
+% Users connected to bypass
 for i = e.by
     u = find(all(edges(i,[2,3])==edges(:,[2 3]),2));
     e.u = [e.u u(u~=i)];
 end
+
+% Overall user information
 e.u_idx = e.u;
 e.nu = setdiff(1:n.e,e.u);
 e.nu_idx = e.nu;
-
 n.u = numel(e.u);
 n.nu = numel(e.nu);
+
+% Plant information
 v.root=find(indegree(G)==0);
 v.term = find(outdegree(G)==0);
 v.root_idx = v.root;
 v.term_idx = v.term;
 
+% Hot and cold elements
 vhot = find(outdegree(G)>1)';
 vcold = find(indegree(G)>1)';
 
@@ -75,27 +109,23 @@ for i = 1:numel(nodes)
     end
 end
 
+% Index to name
 e.ui = G.Edges.Names(e.ui_idx)';
 e.uo = G.Edges.Names(e.uo_idx)';
-
+% Index in nonuser edge list
 [e.ui_idxnu,~] = find(e.ui==e.nu');
 [e.uo_idxnu,~] = find(e.uo==e.nu');
+
 %% Network parameters
 
 params.p = 971;
 params.cp = 4179;
 params.h = 1.5;
 params.mI = n.u*5;
-
-% params.Ts = 3*sawtooth(t*pi/600,.1)+80;
-%params.Ts = 80*ones(1,n.step_T);
 params.Ts = 80*ones(1,numel(time_T));
 params.TsetR = 30;
 
 %% Building parameters
-% pcpV = [197*10^6;190*10^6;185*10^6;202*10^6;217*10^6;108*10^6;124*10^6;126*10^6;130*10^6;146*10^6;127*10^6;183*10^6;163*10^6;209*10^6;179*10^6]; 
-% pcpV = [1/7.7983e-7;1/1.0719e-6];
-% pcpV = pcpV(1:n.u,1);
 
 % Flexibible hours
 idx_day = floor(time_T/(24*60*60))+1;
@@ -130,7 +160,7 @@ T_all(t_all) = 2;
 T_all(~t_all) = 2;
 
 % Get Capacity
-load('Cbuild.mat','pcpV');
+load(pth_data+"Cbuild.mat",'pcpV');
 
 params.Cap_l = pcpV.*-T_all/10^6; %MJ
 params.Cap_u = pcpV.*T_all/10^6;  %MJ
@@ -142,7 +172,6 @@ lambda = 0.01;
 
 % pipes = [L(1) D(2) zeta(3) 1/pV(4)]
 params.pipes = zeros(n.e, 3);
-%params.pipes(e.hot,1) = randi([30 40], numel(e.hot),1);
 params.pipes(e.hot,1) = [60 100 50 30 15 20 10 10 10 10 10 10 10 15 20 30 45 15 20 10 10];
 params.pipes(e.by,1) = 3;
 params.pipes(e.cold,1) = params.pipes(e.hot,1);
@@ -153,18 +182,18 @@ params.pipes(:,3) = lambda*params.pipes(:,1)./params.pipes(:,2)./(2*params.p*(pi
 params.pipes(:,4) = 1./params.p./(pi/4.*params.pipes(:,2).^2.*params.pipes(:,1));
 
 %% Heat Demand
-load('heat profiles','Qb','t');
+
+load(pth_data+"demand profiles",'Qb','t');
 Qb = Qb(:,t>=date_start & t<=date_end);
 time_Qb_orig = 0:15*60:delta_date;
 params.Qb = interp1(time_Qb_orig, Qb', time)'; %kW
 
 %% Ambient Temperature
 
-Tamb = readmatrix("C:\Users\akb42\OneDrive - The Ohio State University\DistrictHeatingNetwork\Project Codes\Building Data\USA_IL_Chicago-Midway.AP_Tamb.xlsx")';
+Tamb = readmatrix(pth_data+"USA_IL_Chicago-Midway.AP_Tamb.xlsx")';
 time_amb_orig = datetime(2018,1,1,0,0,0)+seconds(Tamb(1,:));
 Tamb= Tamb(2,time_amb_orig>=date_start & time_amb_orig<=date_end);
 time_amb_orig = 0:60*60:delta_date;
-%params.Tamb = interp1(tamb, Tamb, 0:params.dt_T:24*60*60);
 params.Tamb = interp1(time_amb_orig, Tamb, time_T);
 
 end
