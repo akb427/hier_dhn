@@ -1,6 +1,6 @@
 %% Load variables
 clc, clear, close all
-load('opti_variables_notime')
+load('opti_variables')
 
 %% Parallel Pool Setup
 
