@@ -1,6 +1,23 @@
 function [pts] = partition_edges(G,w,e,n,flag)
-%PARTITION Summary of this function goes here
-%   Detailed explanation goes here
+%PARTITION_EDGES  Partitions edges based on weighted adjacency matrix to
+%minimize modularity. 
+%
+%   [pts] = PARTITION_EDGES(G,w,e,n,flag)
+%
+%   DESCRIPTION:
+%   
+%
+%   INPUTS:
+%       in1  - Description of input 1 (type, format, units if applicable)
+%       in2  - Description of input 2
+%
+%   OUTPUTS:
+%       out1 - Description of output 1 (what it represents)
+%       out2 - Description of output 2
+%
+%   DEPENDENCIES:
+%
+%   SEE ALSO:
 
 %% Convert to Weighted Undirected Graph
 Grm = rmedge(G,e.u_idx);
