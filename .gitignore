@@ -1,0 +1,29 @@
+# Ignore backup and autosave files
+*.asv
+*.m~
+*.mlx~
+*.fig~
+
+# Ignore Simulink cache and generated files
+slprj/
+sfun.mex*
+*_grt_rtw/
+
+# Ignore code generation and simulation cache
+codegen/
+simulation_cache/
+
+# Ignore temporary and hidden files
+.DS_Store
+Thumbs.db
+*.log
+
+# Ignore OneDrive sync files
+*.tmp
+*.lnk
+*.sync*
+
+# Ignore user-specific settings
+*.prj
+*.settings
+span_rslts.mat
