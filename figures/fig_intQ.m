@@ -1,6 +1,18 @@
-function fig_intQ(v,params,params_all,e,n)
-%FIG_DEMAND Summary of this function goes here
-%   Detailed explanation goes here
+function fig_intQ(sol,params,params_all,e,n)
+%FIG_INTQ  Plot used flexibility.
+%
+%   fig_intQ(sol,params,params_all,e,n)
+%
+%   DESCRIPTION: Plots the flexibility used by the buildings in the network
+%   split into residential and commercial with upper and lower limits
+%   labeled. 
+%
+%   INPUTS:
+%       sol  - Cell of simulation solutions with flexibility. 
+%       params      - Structure of parameters.
+%       params_all  - Structure of network-wide parameters.
+%       e   - Structure of edge information.
+%       n   - Structure of sizes.
 
 %% Legend Vector
 % Residential
@@ -22,7 +34,7 @@ for i = 1:n.com
     leg.com{i} = strcat('$e_{',num2str(e.com_sort(i)),'}$');
 end
 
-n_comp = size(v.Qp,2);
+n_comp = size(sol.Qp,2);
 t = datetime(2018,2,1,0,0,0)+seconds(0:params.dt_T:n_comp*params.dt_T);
 t = t(1:end-1);
 Qres = zeros(n.res, n_comp);
@@ -32,7 +44,7 @@ Ccom_u = zeros(n.com, n_comp);
 Cres_l = zeros(n.res, n_comp);
 Ccom_l = zeros(n.com, n_comp);
 for i = 1:n.res
-    Qres(i,:) = v.intQ(e.res(i)==e.u,:);
+    Qres(i,:) = sol.intQ(e.res(i)==e.u,:);
     Cres_u(i,:) = params_all.Cap_u(e.res(i)==e.u,1:n_comp);
     Cres_l(i,:) = params_all.Cap_l(e.res(i)==e.u,1:n_comp);
 end
@@ -41,7 +53,7 @@ Cres_u = Cres_u(idx_res,:);
 Cres_l = Cres_l(idx_res,:);
 
 for i = 1:n.com
-    Qcom(i,:) = v.intQ(e.com(i)==e.u,:);
+    Qcom(i,:) = sol.intQ(e.com(i)==e.u,:);
     Ccom_u(i,:) = params_all.Cap_u(e.com(i)==e.u,1:n_comp);
     Ccom_l(i,:) = params_all.Cap_l(e.com(i)==e.u,1:n_comp);
 end

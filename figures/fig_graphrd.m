@@ -1,6 +1,14 @@
 function fig_graphrd(G,n)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+%FIG_GRAPHRD Plots reduced network graph.
+%
+%   FIG_GRAPHRD(G,n)
+%
+%   DESCRIPTION: Plots the reduced network graph showing interconnections
+%   between the partitioned subsystems
+%
+%   INPUTS:
+%       G   - Graph of reduced network.
+%       n   - Structure of sizes.
 
 %% Create labels
 n.ered = numedges(G);
@@ -10,6 +18,7 @@ for i = 1:n.ered
         edg_label(i) =strcat('$\mathcal{G}_{',num2str(G.Edges.Names(i)),'}$');
     end
 end
+
 %% Plot figure
 figure('Name','Reduced Graph')
 set(gcf,'Position',[410,161,328,356])
@@ -22,7 +31,7 @@ end
 set(h,'EdgeAlpha',1)
 
 set(gca,'xtick',[],'ytick',[])
-box on
-hold off
+box on; hold off
+
 end
 

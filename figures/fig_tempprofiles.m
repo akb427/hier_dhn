@@ -1,6 +1,14 @@
 function fig_tempprofiles(tp,temp_prof)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+%FIG_TEMPPROFILES  Plots allowed temperature deviations.
+%
+%   FIG_TEMPPROFILES(tp,temp_prof)
+%
+%   DESCRIPTION: Plots the allowed temperature deviations of the buildings
+%   in the network by building type. 
+%
+%   INPUTS:
+%       tp  - Structure of timings.
+%       temp_prof  - Structure of allowable temperature deviations by building type 
 
 %% Create Temperatures
 n_prof = 4;

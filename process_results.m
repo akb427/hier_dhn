@@ -9,9 +9,8 @@
 %       opti_variables.mat  - File of problem variables.
 %       vLL_step  - Folder of stepwise solutions.
 %
-%   DEPENDENCIES: nominal_flow, nominal_flow_slack, fig_cost, fig_demand,
-%   fig_graph, fig_intQ, fig_mI, fig_mdot_u, fig_part, fig_tempprofiles,
-%   fig_graphred
+%   DEPENDENCIES: nominal_flow_tfn, fig_cost, fig_demand, fig_graph,
+%   fig_intQ, fig_mI, fig_mdot_u, fig_part, fig_tempprofiles, fig_graphred
 %
 %   SEE ALSO: create_variables, solve_flex
 
@@ -153,7 +152,7 @@ addpath(pth+filesep+"figures")
 fig_graph(G,n,e,v)
 fig_part(G,Gred,n,e,sG)
 %fig_graphrd(Gred,n)
-fig_demand(params,params_all,e,n,tp,1003)
+fig_demand(params_all,e,n,tp,1003)
 fig_intQ(vsim_all,params,params_all,e,n)
 fig_mdot_u(vsim_all,params,e,n)
 fig_cost(vLL{12*6},vec_dP,n)

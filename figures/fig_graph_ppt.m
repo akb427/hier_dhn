@@ -1,12 +1,23 @@
-function fig_graph_ppt(G,n,e,nd)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+function fig_graph_ppt(G,n,e,v)
+%FIG_GRAPH Plots network graph.
+%
+%   FIG_GRAPH(G,n,e,v)
+%
+%   DESCRIPTION: Plots the network graph with edge sets labeled as hot,
+%   cold, bypass and user. Uses powerpoint friendly settings for easier
+%   visualization.
+%
+%   INPUTS:
+%       G   - Graph of network.
+%       n   - Structure of sizes.
+%       e   - Structure of edge information.
+%       v   - Structure of node information.
 
 %% Create labels
 
 nd_label = strings(n.n,1);
-nd_label(nd.root,1) = "root";
-nd_label(nd.term,1) = "term";
+nd_label(v.root,1) = "root";
+nd_label(v.term,1) = "term";
 
 edg_label = strings(n.e,1);
 edg_label(e.u) = e.u;

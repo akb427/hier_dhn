@@ -1,6 +1,17 @@
-function fig_demand(params,params_all,e,n,tp,idx_end)
-%FIG_DEMAND Summary of this function goes here
-%   Detailed explanation goes here
+function fig_demand(params_all,e,n,tp,idx_end)
+%FIG_DEMAND Plot building demands.
+%
+%   FIG_DEMAND(params_all,e,n,tp,idx_end)
+%
+%   DESCRIPTION: Plots the building demands over time, seperated by
+%   building type and labeled according to edge number.
+%   
+%   INPUTS:
+%       params_all  - Structure of network-wide parameters.
+%       e   - Structure of edge information.
+%       n   - Structure of sizes.
+%       tp  - Structure of timings.
+%       idx_end - Upper limit for time plotting
 
 %% Legend Vector
 % Residential
@@ -30,6 +41,7 @@ for i = 1:n.com
     Qcom(i,:) = params_all.Qb(e.com(i)==e.u,1:idx_end);
 end
 Qcom=Qcom(idx_com,:);
+
 %% Plot
 figure('Name','Qb')
 tiledlayout(2,1,'TileSpacing','tight');
@@ -63,5 +75,6 @@ xlabel('Time','FontSize',14)
 ax.XAxis.SecondaryLabel.Visible='off';
 ylabel('Nominal Heat Demand [$kW$]','FontSize',14)
 box on; grid on; hold off
+
 end
 

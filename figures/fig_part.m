@@ -1,6 +1,17 @@
 function fig_part(G,Gred,n,e,sG)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+%FIG_PART Plots partitioned network graph.
+%
+%   FIG_PART(G,Gred,n,e,sG)
+%
+%   DESCRIPTION: Plots the network graph with partitions labeled. Also
+%   plots the reduced network graph in a smaller right tile.
+%
+%   INPUTS:
+%       G   - Graph of network.
+%       Gred    - Graph of reduced network.
+%       n   - Structure of sizes.
+%       e   - Structure of edge information.
+%       SG  - Structure of subgraphs.
 
 %% Create labels
 edg_label1 = strings(n.e,1);

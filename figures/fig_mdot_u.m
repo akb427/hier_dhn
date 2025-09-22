@@ -1,6 +1,16 @@
-function fig_mdot_u(v,params,e,n)
-%FIG_DEMAND Summary of this function goes here
-%   Detailed explanation goes here
+function fig_mdot_u(sol,params,e,n)
+%FIG_MDOT_U Plot user flow rates.
+%
+%   FIG_MDOT_U(v,params,e,n)
+%
+%   DESCRIPTION: Plots the mass flow rates delivered to the users, split
+%   into residential and commercial buildings
+%
+%   INPUTS:
+%       sol     - Cell of simulation solutions with flexibility. 
+%       params  - Structure of parameters.
+%       e   - Structure of edge information.
+%       n   - Structure of sizes.
 
 %% Legend Vector
 % Residential
@@ -25,21 +35,20 @@ end
 
 t = datetime(2018,2,1,0,0,0)+seconds(0:params.dt:24*60*60+10*60);
 t = t(1:end-1);
-m_res = zeros(n.res, size(v.mdot_e,2));
-m_com = zeros(n.res, size(v.mdot_e,2));
+m_res = zeros(n.res, size(sol.mdot_e,2));
+m_com = zeros(n.res, size(sol.mdot_e,2));
 
 for i = 1:n.res
-    m_res(i,:) = v.mdot_e(e.res(i)==e.u,:);
+    m_res(i,:) = sol.mdot_e(e.res(i)==e.u,:);
 end
 m_res = m_res(idx_res,:);
 
 for i = 1:n.com
-    m_com(i,:) = v.mdot_e(e.com(i)==e.u,:);
+    m_com(i,:) = sol.mdot_e(e.com(i)==e.u,:);
 end
 m_com = m_com(idx_com,:);
 %% Plot
 
-clr = lines(7);
 figure('Name','mdot_u')
 tiledlayout(1,2,'TileSpacing','tight');
 %set(gcf,'Position',[2685,440.3333333333333,894.6666666666665,419.9999999999999])
