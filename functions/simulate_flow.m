@@ -1,4 +1,4 @@
-function [v] = simulate_flow(G,n,nd,e,params,params_sim)
+function [v] = simulate_flow(G,n,nd,e,params,params_sim,changeIG)
 %SIMULATE_FLOW Calculate mass flow rate and pressure losses following
 % given all zeta values
 %   G: graph of network
@@ -98,7 +98,11 @@ opti_flow.set_value(T0, params_sim.T0);
 opti_flow.set_value(intQ0, params_sim.intQ);
 
 % Initial conditions
-opti_flow.set_initial(mdot_e,ones(n.e,n.seg_sim));
+if changeIG
+    opti_flow.set_initial(mdot_e,10*ones(n.e,n.seg_sim));
+else
+    opti_flow.set_initial(mdot_e,ones(n.e,n.seg_sim));
+end
 opti_flow.set_initial(dP_e,params_sim.dP_e(:,1:n.seg_sim));
 
 
@@ -107,9 +111,7 @@ opti_flow.set_initial(dP_e,params_sim.dP_e(:,1:n.seg_sim));
 mdot_by = mdot_e(e.by_idx,:);
 opti_flow.minimize(1);
 
-%opti_flow.solver('ipopt',struct('expand',true),struct('print_level',0,'tol', 1e-2))
 opti_flow.solver('ipopt',struct('print_time',0),struct('print_level',0,'tol', 1e-2))
-%opti_flow.solver('ipopt',struct('expand',true),struct('tol', 1e-2))
 
 try
     sol = opti_flow.solve;
