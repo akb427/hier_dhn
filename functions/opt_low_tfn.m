@@ -1,4 +1,4 @@
-function [M,e_fin] = opt_low_tfn(G,n,nd,e,params,sparams)
+function [M,e_fin] = opt_low_tfn(G,n,nd,e,params,sparams,isSlack)
 %OPTIMIZE_FLOW Calculate mass flow rate breakdown given a set dP
 %   G: graph of network
 %   params: parameters of network
@@ -73,6 +73,11 @@ T = MX(n.nu,n.seg_T);
 Qp = MX(n.u, n.seg_T);
 intQ = MX(n.u,n.seg_T);
 
+if isSlack
+    slack_Cap = opti_flow.variable(n.u,n.seg);
+    opti_flow.subject_to(slack_Cap(:)>=0);
+end
+
 idx = 1;
 i = 1;
 T(:,i) = T0;
@@ -99,7 +104,11 @@ for i = 2:n.seg_T
         Qp(:,i) = params.cp*mdot_e(e.u_idx,idx).*(T(e.ui_idxnu,i)-params.TsetR)/10^3;   % kW
         % Ensure envelope is never exceeded
         intQ(:,i) = intQ(:,i-1)+((Qp(:,i)-Qb(:,idx))*params.dt_T)/10^3; % MJ
-        opti_flow.subject_to(Cap_l(:,i)<=intQ(:,i)<=Cap_u(:,i));
+        if isSlack
+            opti_flow.subject_to((Cap_l(:,i)-slack_Cap(:,idx))<=intQ(:,i)<=Cap_u(:,i)+slack_Cap(:,idx));
+        else
+            opti_flow.subject_to(Cap_l(:,i)<=intQ(:,i)<=Cap_u(:,i));
+        end
         % Update Cost
         cost_T = cost_T+(mI(1,idx)*T(e_fin,i))*params.w_T*(mI(1,idx)*T(e_fin,i));
         cost_Q = cost_Q+intQ(:,i)'*sparams.w_flex*intQ(:,i);
@@ -109,7 +118,11 @@ for i = 2:n.seg_T
         Qp(:,i) = params.cp*mdot_e(e.u_idx,idx).*(T(e.ui_idxnu,i)-params.TsetR)/10^3;   % kW
         % Ensure envelope is never exceeded
         intQ(:,i) = intQ(:,i-1)+((Qp(:,i)-Qb(:,idx))*params.dt_T)/10^3; % MJ
-        opti_flow.subject_to(Cap_l(:,i)<=intQ(:,i)<=Cap_u(:,i));
+        if isSlack
+            opti_flow.subject_to((Cap_l(:,i)-slack_Cap(:,idx))<=intQ(:,i)<=(Cap_u(:,i)+slack_Cap(:,idx)));
+        else
+            opti_flow.subject_to(Cap_l(:,i)<=intQ(:,i)<=Cap_u(:,i));
+        end
         % Update Cost
         cost_T = cost_T+(mI(1,idx)*T(e_fin,i))*params.w_T*(mI(1,idx)*T(e_fin,i));
         cost_Q = cost_Q+intQ(:,i)'*sparams.w_flex*intQ(:,i);
@@ -117,19 +130,38 @@ for i = 2:n.seg_T
 end
 
 opti_flow.subject_to(-30<T(:)<100);
-cost = cost_T;%+cost_Q;
+cost = cost_T;
 
 %% Solver
 mdot_by = mdot_e(e.by_idx,:);
 
-opti_flow.minimize(cost);
+if isSlack
+    opti_flow.minimize(cost+sum(slack_Cap(:)));
+else
+    opti_flow.minimize(cost);
+end
 
-opti_flow.solver('ipopt',struct('print_time',0),struct('print_level',0,'tol', 1e-2,'max_iter',900))
+% Solver setup
+if isSlack
+    n_iter = 1500;
+else
+    n_iter = 900;
+end
+opti_flow.solver('ipopt',struct('print_time',0),struct('print_level',0,'tol', 1e-2,'max_iter',n_iter))
 
-M = opti_flow.to_function('M',{dP,T0,intQ0,Qb,Tamb,Ts,Cap_u,Cap_l,mdot_e,zeta_u,dP_e,mI,P_n,opti_flow.lam_g},...
-    {dP_e,P_n,mdot_e,zeta_u,T,Qp,intQ,mI,opti_flow.lam_g,mdot_by,cost_T,cost_Q,cost},...
-    {'dP','T0','intQ0','Qb','Tamb','Ts','Cap_u','Cap_l','i_mdot_e','i_zeta_u','i_dP_e','i_mI','i_P_n','i_lam_g'},...
-    {'dP_e','P_n','mdot_e','zeta_u','T','Qp','intQ','mI','lam_g','mdot_by','cost_T','cost_Q','cost'});
+% Create function
+inpt = {dP,T0,intQ0,Qb,Tamb,Ts,Cap_u,Cap_l,mdot_e,zeta_u,dP_e,mI,P_n,opti_flow.lam_g};
+outpt = {dP_e,P_n,mdot_e,zeta_u,T,Qp,intQ,mI,opti_flow.lam_g,mdot_by,cost_T,cost_Q,cost};
+inpt_name = {'dP','T0','intQ0','Qb','Tamb','Ts','Cap_u','Cap_l','i_mdot_e','i_zeta_u','i_dP_e','i_mI','i_P_n','i_lam_g'};
+outpt_name = {'dP_e','P_n','mdot_e','zeta_u','T','Qp','intQ','mI','lam_g','mdot_by','cost_T','cost_Q','cost'};
+
+if isSlack
+    outpt{end+1} = slack_Cap;
+    outpt_name{end+1} = 'Cap_slack';
+end
+
+M = opti_flow.to_function('M',inpt,outpt,inpt_name,outpt_name);
+
 
 end
 
