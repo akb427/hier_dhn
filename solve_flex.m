@@ -1,16 +1,33 @@
+%SOLVE_FLEX  One-line summary of what the function does.
+%
+%   DESCRIPTION:
+%   
+%
+%   INPUTS:
+%       opti_variables.m    - File storing control problem.
+%       init_v.m            - File storing initial guesses.
+%
+%   OUTPUTS:
+%       vLL_nt_#.mat - Files storing timestep results. Stored in foler
+%       vLL_step.
+%
+%   DEPENDENCIES: simulate_flow, simulate_flow2
+%
+%   SEE ALSO:
+
 %% Load variables
+
 clc, clear, close all
-load('opti_variables')
 
-%% Parallel Pool Setup
+pth = pwd;
+load(pth+filesep+"opti_variables")
 
-%parpool(19);
-
-%% Load Initial Guesses
-load('init_v');
+% Load Initial Guesses
+load(pth+filesep+"data"+filesep+"init_v");
 vLL_ig = vLL_ig1;
 
 %% Set values for i=1
+
 params_HL.T0 = params.Ts(1)*ones(n.nu,1);
 params_HL.T0(e.uo_idxnu,1) = params.TsetR;
 params_HL.intQ = zeros(n.u,1);
@@ -20,79 +37,77 @@ flag_slack_new = false(1,n.par);
 M_i = M;
 
 %% Run Optimization
-%load('start_for136');
 tic
-for i = 38:n_step
-    disp(i)
+for idx_step = 2:n_step
+    disp(idx_step)
     % Timing indices
-    idx_i = i:(i-1+n.seg);
-    idx_i_sim = i:(i-1+n.seg_sim);
-    idx_i_T = (n.seg_T_sim*(i-1)+1):(n.seg_T_sim*(i-1)+n.seg_T);
-    idx_i_T_sim = (n.seg_T_sim*(i-1)+1):(n.seg_T_sim*(i-1)+n.seg_T_sim);
+    idx_i = idx_step:(idx_step-1+n.seg);
+    idx_i_sim = idx_step:(idx_step-1+n.seg_sim);
+    idx_i_T = (n.seg_T_sim*(idx_step-1)+1):(n.seg_T_sim*(idx_step-1)+n.seg_T);
+    idx_i_T_sim = (n.seg_T_sim*(idx_step-1)+1):(n.seg_T_sim*(idx_step-1)+n.seg_T_sim);
     % Deal variables for low level controller
     params_i = cell(1,n.par);
-    for j = 1:n.sg
-        idx_sg = vec_par(1,:) == j;
+    for idx_part = 1:n.sg
+        idx_sg = vec_par(1,:) == idx_part;
         st.Tamb = params.Tamb(:,idx_i_T);
         st.Ts = params.Ts(:,idx_i_T);
-        if i==1
+        if idx_step==1
             % Initial conditions
-            st.T0 = params.Ts(1)*ones(sn{j}.nu,1);
-            st.T0(se{j}.uo_idxnu,1) = params.TsetR;
-            st.intQ0 = zeros(sn{j}.u,1);
+            st.T0 = params.Ts(1)*ones(sn{idx_part}.nu,1);
+            st.T0(se{idx_part}.uo_idxnu,1) = params.TsetR;
+            st.intQ0 = zeros(sn{idx_part}.u,1);
         else
             % Initial conditions
-            st.T0 = init.T(se{j}.nu,:);
-            st.intQ0 = init.intQ(se{j}.u,:);
+            st.T0 = init.T(se{idx_part}.nu,:);
+            st.intQ0 = init.intQ(se{idx_part}.u,:);
         end
-        st.Qb = sparams{j}.Qb(:,idx_i);
-        st.Cap_u = sparams{j}.Cap_u(:,idx_i_T);
-        st.Cap_l = sparams{j}.Cap_l(:,idx_i_T);
+        st.Qb = sparams{idx_part}.Qb(:,idx_i);
+        st.Cap_u = sparams{idx_part}.Cap_u(:,idx_i_T);
+        st.Cap_l = sparams{idx_part}.Cap_l(:,idx_i_T);
         params_i(1,idx_sg) = repmat({st},1,n.dP);
     end
     % Low Level Controller
-    %ticBytes(gcp)
-    parfor idx = 1:n.par
+    parfor idx_dP = 1:n.par
         tic
         % Initial guesses
-        params_idx = params_i{1,idx};
-        params_idx.i_mdot_e = vLL_ig{1,idx}.mdot_e;
-        params_idx.i_zeta_u = vLL_ig{1,idx}.zeta_u;
-        params_idx.i_dP_e = vLL_ig{1,idx}.dP_e;
-        params_idx.i_mI = vLL_ig{1,idx}.mI;
-        params_idx.i_P_n = vLL_ig{1,idx}.P_n;
-        params_idx.i_lam_g = vLL_ig{1,idx}.lam_g;
-        params_idx.dP = vec_par(2,idx);
-        if flag_rmlam(idx)
+        params_idx = params_i{1,idx_dP};
+        params_idx.i_mdot_e = vLL_ig{1,idx_dP}.mdot_e;
+        params_idx.i_zeta_u = vLL_ig{1,idx_dP}.zeta_u;
+        params_idx.i_dP_e = vLL_ig{1,idx_dP}.dP_e;
+        params_idx.i_mI = vLL_ig{1,idx_dP}.mI;
+        params_idx.i_P_n = vLL_ig{1,idx_dP}.P_n;
+        params_idx.i_lam_g = vLL_ig{1,idx_dP}.lam_g;
+        params_idx.dP = vec_par(2,idx_dP);
+        if flag_rmlam(idx_dP)
             params_idx = rmfield(params_idx,'i_lam_g');
         end
         % Call function
-        vt = M_i{idx}.call(params_idx);
-        vt.valid = M_i{idx}.stats.success;
-        vLL_i{1,idx} = structfun(@full,vt,'UniformOutput',false);
-        t_elapsed_i(1,idx) = toc;
+        vt = M_i{idx_dP}.call(params_idx);
+        vt.valid = M_i{idx_dP}.stats.success;
+        vLL_i{1,idx_dP} = structfun(@full,vt,'UniformOutput',false);
+        t_elapsed_i(1,idx_dP) = toc;
     end
-    %tocBytes(gcp)
     % High level
     [~, ~, idx_HL] = opt_high_par(vLL_i,n,vec_dP,vec_par,params.pipes);
     params_HL.zeta_u = zeros(n.u,n.seg);
     params_HL.mdot_e = zeros(n.e,n.seg);
     mI_partion = zeros(n.sg,n.seg);
-    for j = 1:2
-        for k = 1:sn{j}.u
-            params_HL.zeta_u(se{j}.u(k)==e.u_idx,:) = vLL_i{1,(j-1)*n.dP+idx_HL(1)}.zeta_u(k,:);
+    % Problem specific variable distribution
+    for idx_part = 1:2
+        for k = 1:sn{idx_part}.u
+            params_HL.zeta_u(se{idx_part}.u(k)==e.u_idx,:) = vLL_i{1,(idx_part-1)*n.dP+idx_HL(1)}.zeta_u(k,:);
         end
-        params_HL.mdot_e(se{j}.e,:) = vLL_i{1,(j-1)*n.dP+idx_HL(1)}.mdot_e;
-        params_HL.dP_e(se{j}.e,:) = vLL_i{1,(j-1)*n.dP+idx_HL(1)}.dP_e;
-        mI_partion(j,:) = vLL_i{1,(j-1)*n.dP+idx_HL(1)}.mI;
+        params_HL.mdot_e(se{idx_part}.e,:) = vLL_i{1,(idx_part-1)*n.dP+idx_HL(1)}.mdot_e;
+        params_HL.dP_e(se{idx_part}.e,:) = vLL_i{1,(idx_part-1)*n.dP+idx_HL(1)}.dP_e;
+        mI_partion(idx_part,:) = vLL_i{1,(idx_part-1)*n.dP+idx_HL(1)}.mI;
     end
-    for j = 3:5
-        for k = 1:sn{j}.u
-            params_HL.zeta_u(se{j}.u(k)==e.u_idx,:) = vLL_i{1,(j-1)*n.dP+idx_HL(2)}.zeta_u(k,:);
+    for idx_part = 3:5
+        for k = 1:sn{idx_part}.u
+            params_HL.zeta_u(se{idx_part}.u(k)==e.u_idx,:) = vLL_i{1,(idx_part-1)*n.dP+idx_HL(2)}.zeta_u(k,:);
         end
-        mI_partion(j,:) = vLL_i{1,(j-1)*n.dP+idx_HL(2)}.mI;
-        params_HL.mdot_e(se{j}.e,:) = vLL_i{1,(j-1)*n.dP+idx_HL(2)}.mdot_e;
-        params_HL.dP_e(se{j}.e,:) = vLL_i{1,(j-1)*n.dP+idx_HL(2)}.dP_e;
+        mI_partion(idx_part,:) = vLL_i{1,(idx_part-1)*n.dP+idx_HL(2)}.mI;
+        params_HL.mdot_e(se{idx_part}.e,:) = vLL_i{1,(idx_part-1)*n.dP+idx_HL(2)}.mdot_e;
+        params_HL.dP_e(se{idx_part}.e,:) = vLL_i{1,(idx_part-1)*n.dP+idx_HL(2)}.dP_e;
     end
 
     % Simulation
@@ -119,15 +134,15 @@ for i = 38:n_step
     params_HL.T0 = vsim_i.T(:,end);
     params_HL.intQ = vsim_i.intQ(:,end);
     % Save
-    flname = pwd+"\vLL notime1\"+"vLL_nt_"+num2str(i);
+    flname = pwd+"\vLL notime1\"+"vLL_nt_"+num2str(idx_step);
     save(flname,'vLL_i','vsim_i','t_elapsed_i','idx_HL','init','params_HL');
     
     % Update Initial guess & create flags for next run
     vLL_ig =vLL_i;
     cost = cellfun(@(x)x.cost, vLL_i);
     vLL_ig(cost>10^4) = vLL_ig1(cost>10^4);
-    for j = 1:n.sg
-        flag_slack_new(vec_par(1,:)==j) = any(abs(init.intQ(se{j}.u,:))>sparams{j}.Cap_u(:,idx_i_T(1)));
+    for idx_part = 1:n.sg
+        flag_slack_new(vec_par(1,:)==idx_part) = any(abs(init.intQ(se{idx_part}.u,:))>sparams{idx_part}.Cap_u(:,idx_i_T(1)));
     end
     flag_rmlam = flag_slack_new~=flag_slack;
     flag_rmlam(cost>10^4) = 1;
