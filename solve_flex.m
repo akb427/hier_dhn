@@ -11,7 +11,7 @@
 %       vLL_nt_#.mat - Files storing timestep results. Stored in foler
 %       vLL_step.
 %
-%   DEPENDENCIES: simulate_flow, simulate_flow2
+%   DEPENDENCIES: simulate_flow, simulate_flow2, opt_high_par
 %
 %   SEE ALSO:
 
@@ -19,14 +19,14 @@
 
 clc, clear, close all
 
-pth = pwd;
-load(pth+filesep+"opti_variables")
+pth = string(pwd);
+load(pth+filesep+"opti_variables","G","e","v","n","params","params_all","n_step","M","Ms","vec_dP")
 
 % Load Initial Guesses
-load(pth+filesep+"data"+filesep+"init_v");
+load(pth+filesep+"data"+filesep+"init_v","vLL_ig1");
 vLL_ig = vLL_ig1;
 
-%% Set values for i=1
+%% Set values for step 1
 
 params_HL.T0 = params.Ts(1)*ones(n.nu,1);
 params_HL.T0(e.uo_idxnu,1) = params.TsetR;
