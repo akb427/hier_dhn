@@ -27,3 +27,7 @@ Thumbs.db
 *.prj
 *.settings
 span_rslts.mat
+
+# Ignore large data files
+opti_variables.mat
+vLL_step/
