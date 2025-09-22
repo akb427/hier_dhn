@@ -18,7 +18,7 @@ function [pts] = partition_edges(G,w,e,n,flag)
 %       flag    - Binary indicating plotting of partition.
 %
 %   OUTPUTS:
-%       pts - Cell of the two node groups
+%       pts - Cell of the two node groups.
 
 %% Convert to Weighted Undirected Graph
 Grm = rmedge(G,e.u_idx);
