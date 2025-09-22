@@ -11,7 +11,7 @@
 %       init_v.m            - File storing initial guesses.
 %
 %   OUTPUTS:
-%       vLL_nt_#.mat - Files storing timestep results. Stored in foler
+%       vLLi_#.mat - Files storing timestep results. Stored in foler
 %       vLL_step.
 %
 %   DEPENDENCIES: simulate_flow, opt_high_par
@@ -23,6 +23,8 @@
 clc, clear, close all
 
 pth = string(pwd);
+addpath(pth+append(filesep+"functions"))
+
 load(pth+filesep+"opti_variables","G","e","v","n","params","params_all","n_step","M","Ms","vec_dP")
 
 % Load Initial Guesses
@@ -138,7 +140,7 @@ for idx_step = 2:n_step
     params_HL.T0 = vsim_i.T(:,end);
     params_HL.intQ = vsim_i.intQ(:,end);
     % Save low level results
-    flname = pwd+filesep+"vLL_step"+filesep+"vLL_nt_"+num2str(idx_step);
+    flname = pwd+filesep+"vLL_step"+filesep+"vLLi_"+num2str(idx_step);
     save(flname,'vLL_i','vsim_i','t_elapsed_i','idx_HL','init','params_HL');
     
     % Update Initial guess & create flags for next run
