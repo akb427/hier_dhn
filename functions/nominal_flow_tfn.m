@@ -1,10 +1,32 @@
-function [Mnom] = nominal_flow_tfn(G,n,nd,e,params,isSlack)
-%OPTIMIZE_FLOW_SLACK Calculate mass flow rate and pressure losses following
-% nominal demand with slack in meeting the heat demand included in the cost
-%   G: graph of network
-%   params: parameters of network
-%   n: structure of sizes
-%   given mI, dP 
+function [Mnom] = nominal_flow_tfn(G,n,v,e,params,isSlack)
+%NOMINAL_FLOW_TFN  Create function to solve for network with nominal demands.
+%
+%   [Mnom] = NOMINAL_FLOW_TFN(G,n,nd,e,params,isSlack)
+%
+%   DESCRIPTION: Creates the CasADi function that optimizes the network
+%   behavior subject to set heat demands in the buildings. The resulting 
+%   function takes the supply temperature, initial conditions, ambient 
+%   conditions building conditions, and initial guesses. It returns 
+%   pressure variables, flow variables, friction coefficients, 
+%   temperatures, various costs, and the gradients. The slack flag allows 
+%   slack in the equality constraint for meeting heat demand and penalizes 
+%   it in the cost function. 
+%   
+%   INPUTS:
+%       G   - Graph of network.
+%       n   - Structure of sizes.
+%       v   - Structure of node information.
+%       e   - Structure of edge information.
+%       params  - Structure of network-wide parameters.
+%       isSlack - Binary indicating slack in demand equality constraint.
+%
+%   OUTPUTS:
+%       Mnom - CasADI function.
+%
+%   DEPENDENCIES: graph2ss
+
+%#ok<*CHAIN>   % This is okay in CASADI
+%#ok<*FNDSB>   % This is nessecary in CASADI
 
 %% Setup Problem 
 import casadi.*
@@ -20,7 +42,7 @@ mI = opti_flow.variable(1,n.seg);
 opti_flow.subject_to(mI(:)>0);
 
 mdot_n = MX.zeros(n.v-1,n.seg);
-mdot_n(nd.root_idx,:) = mI;
+mdot_n(v.root_idx,:) = mI;
 
 % Zeta
 zeta_u = opti_flow.variable(n.u, n.seg);
@@ -35,7 +57,7 @@ opti_flow.subject_to(dP_e(:)>=0);
 
 % Remove overconstraint for mdot
 Ired = params.Inc;
-Ired(nd.term_idx,:) = [];
+Ired(v.term_idx,:) = [];
 
 %% Constraints
 for i = 1:n.seg
@@ -46,7 +68,7 @@ for i = 1:n.seg
     opti_flow.subject_to(dP_e(:,i)==params.Inc'*P_n(:,i));
     
     % Set reference pressue
-    opti_flow.subject_to(P_n(nd.term_idx,i)==0);
+    opti_flow.subject_to(P_n(v.term_idx,i)==0);
     
     % Edge equations
     opti_flow.subject_to(dP_e(e.nu_idx,i) == params.pipes(e.nu_idx,3).*mdot_e(e.nu_idx,i).^2);
@@ -67,14 +89,14 @@ end
 
 i = 1;
 idx = 1;
-[A,B,E] = graph2ss(G,params,params,n,nd,e,mdot_e(:,idx),0);
+[A,B,E] = graph2ss(G,params,params,n,v,e,mdot_e(:,idx),0);
 T(:,i)=(MX.eye(size(A,1))+A*params.dt_T)*T0+params.dt_T*[B,E]*[Ts(1,i-1);params.TsetR;Tamb(1,i-1)];
 Qp(:,i) = params.cp*mdot_e(e.u_idx,idx).*(T(e.ui_idxnu,i)-params.TsetR)/1000;
 if isSlack
     opti_flow.subject_to(Qp(:,i)==Qb(:,idx)+Qp_slack(:,idx));
 end
 
-e_fin = inedges(G,nd.term_idx);
+e_fin = inedges(G,v.term_idx);
 e_fin_nu = find(any(e.nu_idx==e_fin));
 cost_T = MX(1,1);
 cost_T = cost_T+(mdot_e(e_fin,idx).*T(e_fin_nu,i))'*(params.w_T*eye(numel(e_fin)))*(mdot_e(e_fin,idx).*T(e_fin_nu,i));
@@ -85,7 +107,7 @@ for i = 2:n.seg_T
     if mod((i-1)*params.dt_T,params.dt)==0      % when mdot can change
         idx = idx+1;
         % Update SS
-        [A,B,E] = graph2ss(G,params,params,n,nd,e,mdot_e(:,idx),0);
+        [A,B,E] = graph2ss(G,params,params,n,v,e,mdot_e(:,idx),0);
         T(:,i)=(MX.eye(size(A,1))+A*params.dt_T)*T(:,i-1)+params.dt_T*[B,E]*[Ts(1,i-1);params.TsetR;Tamb(1,i-1)];
         % Calculate provided heat
         Qp(:,i) = params.cp*mdot_e(e.u_idx,idx).*(T(e.ui_idxnu,i)-params.TsetR)/1000;
