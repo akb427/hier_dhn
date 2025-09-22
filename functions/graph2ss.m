@@ -82,7 +82,6 @@ for i = 1:n.nu
     end     
 end
 
-
 %% E
 % Preallocate E
 if ismat
