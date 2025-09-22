@@ -63,19 +63,19 @@ n.dP = numel(vec_dP);
 n.sg = 2;
 [sG,se,sn,~,sparams] = subgraph_params(G,pts,e,n,params);
 
-% Partition 2
-[pts_n] = partition_edges(sG{2},sparams{2}.pipes(:,4),se{2},sn{2},0);
-pts = [pts_n, pts(1)];
+% Partition 1 further
+[pts_n] = partition_edges(sG{1},sparams{1}.pipes(:,4),se{1},sn{1},0);
+pts = [pts_n, pts(2)];
 n.sg = 3;
 [sG,se,sn,~,sparams] = subgraph_params(G,pts,e,n,params);
 
-% Partition 2
-[pts_n] = partition_edges(sG{2},sparams{2}.pipes(:,4),se{2},sn{2},0);
-pts = [pts_n, pts([1 3])];
+% Partition 1 further
+[pts_n] = partition_edges(sG{1},sparams{1}.pipes(:,4),se{1},sn{1},0);
+pts = [pts_n, pts([2 3])];
 n.sg = 4;
 [sG,se,sn,~,sparams] = subgraph_params(G,pts,e,n,params);
 
-% Partition 1
+% Partition 1 further
 [pts_n] = partition_edges(sG{1},sparams{1}.pipes(:,4),se{1},sn{1},0);
 pts = [pts_n, pts([2 3 4])];
 pts{1}(pts{1}==1) = [];
