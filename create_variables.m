@@ -99,8 +99,8 @@ M = cell(1,n.sg);
 Ms = cell(1,n.sg);
 e.fin = zeros(1,n.sg);
 for i = 1:n.sg
-    [M{i},e.fin(i)] = opt_low_tfn(sG{i},sn{i},snd{i},se{i},params,sparams{i});
-    Ms{i} = opt_low_tfn_slack(sG{i},sn{i},snd{i},se{i},params,sparams{i});
+    [M{i},e.fin(i)] = opt_low_tfn(sG{i},sn{i},snd{i},se{i},params,sparams{i},false);
+    Ms{i} = opt_low_tfn(sG{i},sn{i},snd{i},se{i},params,sparams{i},true);
 end
 M = repelem(M,n.dP);
 Ms = repelem(Ms,n.dP);
