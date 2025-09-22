@@ -7,7 +7,7 @@ n.ered = numedges(G);
 edg_label = strings(n.ered,1);
 for i = 1:n.ered
     if ~isnan(G.Edges.Names(i))
-        edg_label(i) =strcat('$\mathcal{G}_{',num2str(Gred.Edges.Names(i)),'}$');
+        edg_label(i) =strcat('$\mathcal{G}_{',num2str(G.Edges.Names(i)),'}$');
     end
 end
 %% Plot figure
