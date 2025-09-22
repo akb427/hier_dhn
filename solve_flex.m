@@ -1,7 +1,10 @@
-%SOLVE_FLEX  One-line summary of what the function does.
+%SOLVE_FLEX  Solves the hierarchical optimization problem.
 %
-%   DESCRIPTION:
-%   
+%   DESCRIPTION: Runs the time based simulation for the control. Solves the
+%   low level problem for all specified pressure drops. Then runs the high
+%   level optimizer to determine which pressure drop to use. Rolls out the
+%   simulation to find intial points for the next time step. Repeats for
+%   set number of time steps. 
 %
 %   INPUTS:
 %       opti_variables.m    - File storing control problem.
@@ -11,7 +14,7 @@
 %       vLL_nt_#.mat - Files storing timestep results. Stored in foler
 %       vLL_step.
 %
-%   DEPENDENCIES: simulate_flow, simulate_flow2, opt_high_par
+%   DEPENDENCIES: simulate_flow, opt_high_par
 %
 %   SEE ALSO:
 
@@ -120,9 +123,10 @@ for idx_step = 2:n_step
     params_HL.Cap_l = params_all.Cap_l(:,idx_i_T_sim);
     params_HL.Qb = params_all.Qb(:,idx_i_sim);
     
-    vsim_i = simulate_flow(G,n,v,e,params,params_HL);
+    vsim_i = simulate_flow(G,n,v,e,params,params_HL,0);
+    % Try solving with a different IG
     if ~vsim_i.valid
-        vsim_i = simulate_flow2(G,n,v,e,params,params_HL);
+        vsim_i = simulate_flow(G,n,v,e,params,params_HL,1);
     end
     
     % initial values for next optimization
@@ -133,8 +137,8 @@ for idx_step = 2:n_step
     % inital values for next simulation
     params_HL.T0 = vsim_i.T(:,end);
     params_HL.intQ = vsim_i.intQ(:,end);
-    % Save
-    flname = pwd+"\vLL notime1\"+"vLL_nt_"+num2str(idx_step);
+    % Save low level results
+    flname = pwd+filesep+"vLL_step"+filesep+"vLL_nt_"+num2str(idx_step);
     save(flname,'vLL_i','vsim_i','t_elapsed_i','idx_HL','init','params_HL');
     
     % Update Initial guess & create flags for next run
