@@ -6,7 +6,7 @@
 %   solved in the hierarchical structure for the subgraphs.
 %
 %   OUTPUTS:
-%       opti_variables.m - File storing control problem
+%       opti_variables.m - File storing control problem.
 %
 %   DEPENDENCIES: generate_params, partition_edges, subgraph_params,
 %   opt_low_tfn
