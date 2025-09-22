@@ -29,7 +29,7 @@ function [G,n,e,v,params,temp_prof] = generate_params(G,n,e,params)
 
 %% Data loading
 
-pth_data = pwd+filesep+"data"+filesep; 
+pth_data = string(pwd)+filesep+"data"+filesep; 
 
 %% Timing
 
