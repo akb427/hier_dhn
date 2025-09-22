@@ -1,11 +1,27 @@
-function [v] = simulate_flow(G,n,nd,e,params,params_sim,changeIG)
-%SIMULATE_FLOW Calculate mass flow rate and pressure losses following
-% given all zeta values
-%   G: graph of network
-%   params: parameters of network
-%   n: structure of sizes
-%   given mI, dP 
-
+function [sol] = simulate_flow(G,n,v,e,params,params_sim,changeIG)
+%SIMULATE_FLOW Calculate mass flow rate and pressure losses given zeta.
+%
+%   [sol] = simulate_flow(G,n,v,e,params,params_sim,changeIG)
+%
+%   DESCRIPTION: Simulates the network flow given the valve positions,
+%   plant conditions, and ambient variables. Resolves pressure drop and
+%   mass flow in all network edges. It outputs the simulation results in a
+%   structure. Has two different intial guess magnitudes for if the problem
+%   does not solve. Uses CasADi.
+%
+%   INPUTS:
+%       G       - Graph of network.
+%       n       - Structure of sizes.
+%       v       - Structure of node infomration.
+%       e       - Structure of edge information.
+%       params  - Structure of network components parameter.
+%       params_sim  - Structure of set variables for the simulation.
+%       changeIG    - Binary flag indicating which intial guess to use.
+%
+%   OUTPUTS:
+%       sol - Strucuture of solution variables.
+%
+%   DEPENDENCIES: graph2ss
 
 %% Setup Problem 
 import casadi.*
@@ -22,7 +38,7 @@ mdot_e = opti_flow.variable(n.e, n.seg_sim);
 opti_flow.subject_to(mdot_e(:)>=0);
 
 mdot_n = MX.zeros(n.v-1,n.seg_sim);
-mdot_n(nd.root_idx,:) = mI;
+mdot_n(v.root_idx,:) = mI;
 
 % Pressures
 P_n = opti_flow.variable(n.v, n.seg_sim);
@@ -33,7 +49,7 @@ opti_flow.subject_to(dP_e(:)>=0);
 
 % Remove overconstraint for mdot
 Ired = params.Inc;
-Ired(nd.term_idx,:) = [];
+Ired(v.term_idx,:) = [];
 
 %% Constraints
 for i = 1:n.seg_sim
@@ -44,7 +60,7 @@ for i = 1:n.seg_sim
     opti_flow.subject_to(dP_e(:,i)==params.Inc'*P_n(:,i));
     
     % Set reference pressue
-    opti_flow.subject_to(P_n(nd.term_idx,i)==0);
+    opti_flow.subject_to(P_n(v.term_idx,i)==0);
     
     % Edge equations
     opti_flow.subject_to(dP_e(e.nu_idx,i) == params.pipes(e.nu_idx,3).*mdot_e(e.nu_idx,i).^2);
@@ -67,13 +83,13 @@ i = 1;
 T(:,i) = T0;
 Qp(:,i) = params.cp*mdot_e(e.u_idx,idx).*(T(e.ui_idxnu,i)-params.TsetR)/10^3; % kW
 intQ(:,i) = intQ0+(Qp(:,i)-Qb(:,idx))*params.dt_T/10^3; %MJ
-[A,B,E] = graph2ss(G,params,params,n,nd,e,mdot_e(:,idx),0);
+[A,B,E] = graph2ss(G,params,params,n,v,e,mdot_e(:,idx),0);
 
 for i = 2:n.seg_T_sim
     if mod((i-1)*params.dt_T,params.dt)==0      % when mdot can change
         idx = idx+1;
         % Update SS
-        [A,B,E] = graph2ss(G,params,params,n,nd,e,mdot_e(:,idx),0);
+        [A,B,E] = graph2ss(G,params,params,n,v,e,mdot_e(:,idx),0);
         T(:,i)=(MX.eye(size(A,1))+A*params.dt_T)*T(:,i-1)+params.dt_T*[B,E]*[Ts(1,i-1);params.TsetR;Tamb(1,i-1)];
         % Calculate provided heat
         Qp(:,i) = params.cp*mdot_e(e.u_idx,idx).*(T(e.ui_idxnu,i)-params.TsetR)/10^3; %kW
@@ -116,26 +132,26 @@ opti_flow.solver('ipopt',struct('print_time',0),struct('print_level',0,'tol', 1e
 try
     sol = opti_flow.solve;
     % output values
-    v.dP_e = sol.value(dP_e);
-    v.P_nd = sol.value(P_n);
-    v.mdot_e = sol.value(mdot_e);
-    v.T = sol.value(T);
-    v.Qp = sol.value(Qp);
-    v.intQ = sol.value(intQ);
-    v.mI = params_sim.mI;
-    v.cost = sum(sol.value(mdot_by),'all');
-    v.valid = 1;
+    sol.dP_e = sol.value(dP_e);
+    sol.P_nd = sol.value(P_n);
+    sol.mdot_e = sol.value(mdot_e);
+    sol.T = sol.value(T);
+    sol.Qp = sol.value(Qp);
+    sol.intQ = sol.value(intQ);
+    sol.mI = params_sim.mI;
+    sol.cost = sum(sol.value(mdot_by),'all');
+    sol.valid = 1;
 catch
     opti_flow.debug.show_infeasibilities(10^-2)
     % output values if solver doesnt converge
-    v.dP_e = opti_flow.debug.value(dP_e);
-    v.P_nd = opti_flow.debug.value(P_n);
-    v.mdot_e = opti_flow.debug.value(mdot_e);
-    v.T = opti_flow.debug.value(T);
-    v.Qp = opti_flow.debug.value(Qp);
-    v.mI = params_sim.mI;
-    v.cost = sum(opti_flow.debug.value(mdot_by),'all');
-    v.valid = 0;
+    sol.dP_e = opti_flow.debug.value(dP_e);
+    sol.P_nd = opti_flow.debug.value(P_n);
+    sol.mdot_e = opti_flow.debug.value(mdot_e);
+    sol.T = opti_flow.debug.value(T);
+    sol.Qp = opti_flow.debug.value(Qp);
+    sol.mI = params_sim.mI;
+    sol.cost = sum(opti_flow.debug.value(mdot_by),'all');
+    sol.valid = 0;
 end
 
 
