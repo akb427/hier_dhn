@@ -1,12 +1,26 @@
-function [A,B,E] = graph2ss(G,params,sparams,n,nd,e,mdot_e,ismat)
+function [A,B,E] = graph2ss(G,params,sparams,n,v,e,mdot_e,ismat)
 %GRAPH2SS Convert graph, parameters and mass flow rates to state space
 %matrices
-%   G: graph of network
-%   params: network params
-%   n: strucutre to store size elements
-%   mdot_e: mass flow rate in edges
-%   ismat: true if no casadi variables are to be used
-%   DOESNT WORK for cs=3
+%
+%   [A,B,E] = GRAPH2SS(G,params,sparams,n,nd,e,mdot_e,ismat)
+%
+%   DESCRIPTION: Converts the network parameter and current edge mass flow
+%   rates into the variables needed for the continuous time state space
+%   calculation. Uses either matrices with known mdot_e or CasADi variables
+%   depending on ismat value. 
+%
+%   INPUTS:
+%       G       - Graph of network.
+%       params  - Structure of network parameters.
+%       n       - Strucutre of sizes.
+%       mdot_e  - Vector of mass flow rate in edges.
+%       ismat   - Binary indicator of numeric (true) or CasAdi (false).
+%
+%   OUTPUTS:
+%       A   - State transition matrix.
+%       B   - Supply temperature input matrix. 
+%       E   - Return and ambient input matrix.
+
 import casadi.*
 
 %% Coefficients
@@ -37,7 +51,7 @@ for i = 1:n.nu
     if numel(in_edge)>0
         for j = in_edge
             j2 = find(j==e.nu_idx);
-            if numel(in_edge_all)==1
+            if isscalar(in_edge_all)
                 A(i,j2) = c(i2,1);
             else
                 A(i,j2) = mdot_e(j)/mdot_e(i2)*c(i2,1);
@@ -55,7 +69,7 @@ else
 end
 
 % Populate B
-e.supply = find(edges(:,1)==nd.root_idx);
+e.supply = find(edges(:,1)==v.root_idx);
 for i = 1:n.nu
     i2 = e.nu_idx(1,i);
     if any(i2==e.uo_idx)

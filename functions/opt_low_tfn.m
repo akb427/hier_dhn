@@ -25,6 +25,8 @@ function [M,e_fin] = opt_low_tfn(G,n,v,e,params,sparams,isSlack)
 %   OUTPUTS:
 %       M   - CasADi function
 %       e_fin   - Vector of edges leading to terminal nodes.
+%
+%   DEPENDENCIES: graph2ss
 
 %#ok<*CHAIN>   % This is okay in CASADI
 %#ok<*FNDSB>   % This is nessecary in CASADI
